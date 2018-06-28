@@ -399,7 +399,7 @@ Proto.request = function (){
     //url = parsed.protocol + "//" + parsed.host + parsed.pathname;
     //if (querystr) url += "?" + querystr;
     var parsedUrl = URL.parse(url, true);
-    var search = parsedUrl.search;
+    var search = parsedUrl.search || '';
     if(querystr){
         search = search || "?";
         search += querystr;
