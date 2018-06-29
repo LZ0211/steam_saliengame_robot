@@ -16,8 +16,7 @@ Steam 特卖星人小游戏挂机程序
 1. 登陆steam网站
 2. 进入页面：https://steamcommunity.com/saliengame/gettoken
 3. 复制token
-============================================================
-`
+============================================================`
 
 let rl = readline.createInterface({
     input: process.stdin,
@@ -119,8 +118,7 @@ function countDown(time,fn,data){
 		stdout.write(`倒计时：剩余${time--}秒...`)
 		return new Promise(resolve=>{
 			(function count(){
-				stdout.clearLine()
-				stdout.cursorTo(0)
+				readline.cursorTo(process.stdout, 0)
 				if (time == 0) return resolve(data)
 				stdout.write(`倒计时：剩余${time--}秒...`)
 				setTimeout(count,1000)
@@ -136,8 +134,7 @@ function combat(data){
 	stdout.write(`正在交战,剩余${time--}秒...`)
 	return new Promise(resolve=>{
 		(function count(){
-			stdout.clearLine()
-			stdout.cursorTo(0)
+			readline.cursorTo(process.stdout, 0)
 			if (time == 0) return resolve(data)
 			stdout.write(`正在交战,剩余${time--}秒...`)
 			setTimeout(count,1000)
@@ -150,7 +147,7 @@ function logScore(score){
 }
 
 function onError(err){
-	log(err)
+	//log(err)
 	return countDown(10,autoPlay)
 }
 
