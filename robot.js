@@ -50,7 +50,9 @@ function getPlanets(){
 }
 
 function selectPlanet(planets){
-	let planet = planets.filter(planet=>planet.state.active).pop()
+	let activedPlanets = planets.filter(planet=>planet.state.active && !planet.state.captured)
+	if(!activedPlanets.length) return process.exit()
+	let planet = activedPlanets.filter(planet=>planet.state.boss_zone_position).pop() || activedPlanets.filter(planet=>planet.state.capture_progress<0.99).pop()
 	if(!active_planet) return joinPlanet(planet)
 	let actived = planets.filter(planet=>planet.id == active_planet).pop()
 	log(`当前位于${actived.state.name}`)
@@ -80,7 +82,10 @@ function getZones(planet){
 }
 
 function selectZone(zones){
-	let zone = zones.filter(x=>x.capture_progress < 0.9).sort((x,y)=>x.difficulty-y.difficulty).pop()
+	let activedZones = zones.filter(x=>x.capture_progress < 0.9).sort((x,y)=>x.difficulty-y.difficulty)
+	let zone = activedZones.pop()
+	let bossZone = activedZones.filter(zone=>zone.boss_active).pop()
+	if(bossZone) return joinBossZone(bossZone).then(bossCombat)
 	if(!active_zone_game) return joinZone(zone)
 	log(`当前位于${active_zone_game}战区`)
 	return leaveZone(active_zone_game).then(()=>joinZone(zone))
@@ -113,6 +118,38 @@ function reportScore(score){
 	.then(response,()=>reportScore(score))
 }
 
+function joinBossZone(zone){
+	log(`加入${zone.gameid}BOSS战区`)
+	return request.post(`${host}/ITerritoryControlMinigameService/JoinBossZone/v0001/`)
+	.referer(referer)
+	.send(`zone_position=${zone.zone_position}&access_token=${token}`)
+	.then(data=>data.response.zone_info,()=>joinBossZone(zone))
+}
+
+function bossCombat(){
+	var time = 0
+	function combatBoss(){
+		log(`攻击BOSS...`)
+		time += 5
+		var userHealAbility = time%60 ? 0 : 1
+		return request.post(`${host}/ITerritoryControlMinigameService/ReportBossDamage/v0001/`)
+		.send(`access_token=${token}&use_heal_abilit=${userHealAbility}&damage_to_boss=${1+Math.floor(Math.random()*4)}&damage_taken=0`)
+		.then(response)
+		.then(res=>{
+			if(!res.boss_status){
+				log('你的特卖星人已死亡...')
+				throw new Error('你的特卖星人已死亡...')
+			} 
+			if(res.game_over){
+				log('BOSS战已结束...')
+				throw new Error('BOSS战已结束...')
+			}
+			return countDown(5,combatBoss)
+		})
+	}
+	return combatBoss()
+}
+
 function countDown(time,fn,data){
 	function wait(data){
 		stdout.write(`倒计时：剩余${time--}秒...`)
@@ -130,7 +167,7 @@ function countDown(time,fn,data){
 }
 
 function combat(data){
-	let time = 120
+	let time = 119
 	stdout.write(`正在交战,剩余${time--}秒...`)
 	return new Promise(resolve=>{
 		(function count(){
@@ -147,8 +184,8 @@ function logScore(score){
 }
 
 function onError(err){
-	//log(err)
-	return countDown(10,autoPlay)
+	log(err)
+	return countDown(3,autoPlay)
 }
 
 function pipe(data){
